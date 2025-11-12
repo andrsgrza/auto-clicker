@@ -1,10 +1,8 @@
-# Dockerfile
 FROM node:20-bullseye
-
 WORKDIR /app
 ENV PUPPETEER_CACHE_DIR=/app/.cache
 
-# Dependencias que Chromium necesita en runtime
+# Dependencias de Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates fonts-liberation \
   libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdbus-1-3 libdrm2 \
@@ -14,9 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY package*.json ./
 RUN npm ci --omit=dev
-
 COPY . .
 
-# Por defecto corre en headless
+# Crear usuario no-root para Puppeteer
+RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
+  && mkdir -p /home/pptruser/Downloads /app/.cache \
+  && chown -R pptruser:pptruser /home/pptruser /app
+USER pptruser
+
 ENV HEADLESS=new
 CMD ["node","index.js"]
